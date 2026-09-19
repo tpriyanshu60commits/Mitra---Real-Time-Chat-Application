@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import morgan from "morgan";
 import connectDB from "./src/config/db.js";
+import AuthRouter from "./src/routers/authRouter.js";
+import UserRouter from "./src/routers/userRouter.js";
 
 import http from "http";
 import { Server } from "socket.io";
@@ -21,6 +23,10 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan("dev"));
+
+app.use("/api/auth", AuthRouter);
+app.use("/api/user", UserRouter);
+
 
 app.get("/api", (req, res) => {
   res.status(200).json({ message: "Mingo Chat 678 API is running 🚀" });
