@@ -1,13 +1,26 @@
 import { useState } from "react";
-import heroImg from "./assets/hero.png";
-import reactLogo from "./assets/react.svg";
-
+import { Routes, Route, useLocation } from "react-router-dom";
+import SiteHeader from "./components/SiteHeader";
+import { Toaster } from "react-hot-toast";
+import Contactus from "./pages/Contactus";
+import Home from "./pages/Home";
+import Register from "./pages/Register";
+import Login from "./pages/Login";
+import UserDashboard from "./pages/UserDashboard";
+import Chat from "./pages/Chat";
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
     <>
-      <h1 className="text-3xl font-bold text-blue-500">Mitra</h1>
+      <Toaster />
+      <SiteHeader />
+      <Routes>
+        <Route path="/contact" element={<Contactus />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/chat" element={<Chat />} />
+      </Routes>
     </>
   );
 }
