@@ -245,7 +245,11 @@ const Register = () => {
 
             {/* Bottom branding overlay on the visual */}
             <div className="absolute bottom-4 left-6 flex items-center gap-2">
-              <span className="text-xl">💬</span>
+              <img
+                src="/mitra-logo.svg"
+                alt="Mitra Logo"
+                className="w-6 h-6 object-contain"
+              />
               <span className="text-lg font-black tracking-wider text-cyan-300 drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]">
                 Mitra
               </span>

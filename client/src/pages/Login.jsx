@@ -106,8 +106,12 @@ const Login = () => {
         >
           {/* Top-Left Corner Branding Badge */}
           <div className="w-full flex items-center gap-3 mb-6 px-4">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-400/80 flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.75)]">
-              <span className="text-xl">💬</span>
+            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-[0_0_20px_rgba(0,240,255,0.75)]">
+              <img
+                src="/mitra-logo.svg"
+                alt="Mitra Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <span
               className="text-3xl font-black tracking-tight text-cyan-300"

@@ -21,8 +21,12 @@ const SiteHeader = () => {
           className="flex items-center gap-2.5 cursor-pointer select-none group"
           onClick={() => handleNav("/")}
         >
-          <div className="w-8 h-8 rounded-full bg-cyan-500/10 border border-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.7)] group-hover:scale-105 transition-transform">
-            <span className="text-base">💬</span>
+          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.7)] group-hover:scale-105 transition-transform">
+            <img
+              src="/mitra-logo.svg"
+              alt="Mitra Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <span
             className="text-2xl font-black tracking-tight text-cyan-300"
