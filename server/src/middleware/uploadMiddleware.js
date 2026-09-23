@@ -1,7 +1,7 @@
 import multer from "multer";
 
 const storage = multer.memoryStorage();
-const filter = (req, res, next) => {
+const fileFilter = (req, file, cb) => {
   const allowedMimeTypes = [
     "image/jpeg",
     "image/png",
@@ -29,4 +29,4 @@ export const uploadMedia = multer({
     fileSize: 25 * 1024 * 1024,
   },
   fileFilter,
-});
+});

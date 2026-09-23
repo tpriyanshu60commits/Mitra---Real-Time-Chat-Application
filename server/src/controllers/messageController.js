@@ -22,7 +22,7 @@ function parseCloudinaryUrl(url) {
   return null;
 }
 
-export const SendMessage = async () => {
+export const SendMessage = async (req, res, next) => {
   try {
     const receiverId = req.body.receiverId || req.body.receiverID;
     const messageText = (req.body.message || "").trim();

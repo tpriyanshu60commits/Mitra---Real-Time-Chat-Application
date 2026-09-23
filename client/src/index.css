@@ -1,9 +1,23 @@
 @import "tailwindcss";
 
-@plugin "flyonui" {
-  themes: all;
-}
+@plugin "flyonui";
 
 @import "flyonui/variants.css";
 
 @source "../node_modules/flyonui/flyonui.js";
+
+/* Custom Cyber Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #040822;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.6);
+}

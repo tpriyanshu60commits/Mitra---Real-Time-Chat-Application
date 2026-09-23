@@ -8,7 +8,7 @@ const messageSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    recieverId: {
+    receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -18,6 +18,11 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: "",
       trim: true,
+    },
+    messageType: {
+      type: String,
+      enum: ["text", "image", "pdf", "file"],
+      default: "text",
     },
     fileUrl: {
       type: String,

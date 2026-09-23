@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema(
       enum: ["normal_user", "google_user", "hybrid_user"],
       required: true,
     },
+    profilePic: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

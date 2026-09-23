@@ -1,4 +1,4 @@
-import React, {
+import {
   useEffect,
   useState,
   useMemo,
@@ -11,6 +11,11 @@ import { useNavigate } from "react-router-dom";
 import api from "../config/api";
 import socketAPI from "../config/webSocket";
 import toast from "react-hot-toast";
+import {
+  HiSearch,
+  HiRefresh,
+  HiX,
+} from "react-icons/hi";
 
 const playNotificationSound = () => {
   try {
@@ -43,14 +48,21 @@ const formatTimeAgo = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
-  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (diffMins < 1) {
+    return "now";
+  } else if (diffMins < 60) {
+    return `${diffMins}m`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h`;
   } else if (diffDays === 1) {
-    return "Yesterday";
+    return "1d";
   } else if (diffDays < 7) {
-    return date.toLocaleDateString([], { weekday: "short" });
+    return `${diffDays}d`;
   } else {
     return date.toLocaleDateString([], { month: "short", day: "numeric" });
   }
@@ -73,10 +85,6 @@ const Chat = () => {
   }, [contacts]);
 
   const selectedFriendRef = useRef(selectedFriend);
-  useEffect(() => {
-    selectedFriendRef.current = selectedFriend;
-  }, [selectedFriend]);
-
   useEffect(() => {
     selectedFriendRef.current = selectedFriend;
   }, [selectedFriend]);
@@ -130,7 +138,7 @@ const Chat = () => {
     } finally {
       setLoadingContacts(false);
     }
-  }, []);
+  }, [user]);
 
   const updateConversationSnippet = useCallback(
     (friendId, messageText, timestamp = new Date().toISOString()) => {
@@ -217,10 +225,12 @@ const Chat = () => {
         );
         const senderName = senderObj?.fullName || "Someone";
 
-        toast(
+        toast.custom(
           (t) => (
             <div
-              className="flex items-center gap-2 cursor-pointer"
+              className={`${
+                t.visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+              } transition-all duration-300 flex items-center gap-3 cursor-pointer bg-[#070d2b]/95 backdrop-blur-xl p-3 rounded-2xl border border-cyan-500/40 shadow-[0_0_25px_rgba(0,240,255,0.25)] hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(0,240,255,0.4)] max-w-sm`}
               onClick={() => {
                 toast.dismiss(t.id);
                 if (senderObj) {
@@ -228,16 +238,25 @@ const Chat = () => {
                 }
               }}
             >
-              <div className="avatar avatar-placeholder shrink-0">
-                <div className="size-8 rounded-full bg-primary text-primary-content font-bold text-xs flex items-center justify-center">
-                  {(senderName[0] || "U").toUpperCase()}
-                </div>
+              <div className="size-10 rounded-full bg-gradient-to-tr from-cyan-400 to-fuchsia-500 text-white font-bold text-xs flex items-center justify-center shadow-[0_0_12px_rgba(0,240,255,0.6)] shrink-0 overflow-hidden border border-cyan-400/40">
+                {senderObj?.profilePic ? (
+                  <img
+                    src={senderObj.profilePic}
+                    alt={senderName}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  (senderName[0] || "U").toUpperCase()
+                )}
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-base-content">
-                  {senderName}
-                </p>
-                <p className="text-xs text-base-content/70 truncate max-w-[180px]">
+              <div className="min-w-0 pr-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-cyan-300 truncate">
+                    {senderName}
+                  </p>
+                  <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <p className="text-xs text-cyan-100/75 truncate max-w-[200px]">
                   {incomingMsg.message}
                 </p>
               </div>
@@ -292,66 +311,59 @@ const Chat = () => {
     });
 
     return result;
-  }, [contacts, searchQuery, conversationsMeta]);
+  }, [contacts, searchQuery, conversationsMeta, user?._id]);
 
   return (
     <>
       {isLogin && (
-        <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-base-100">
-          {/* Sidebar */}
+        <div className="h-[calc(100vh-57px)] sm:h-[calc(100vh-61px)] w-full bg-[#030617] text-white overflow-hidden flex select-none m-0 p-0">
+          {/* ================================================================= */}
+          {/* LEFT SIDEBAR: Conversations List                                  */}
+          {/* ================================================================= */}
           <div
-            className={`w-full md:w-80 lg:w-96 shrink-0 bg-base-100 border-r border-base-300 flex flex-col transition-all ${
+            className={`w-full md:w-80 lg:w-[350px] shrink-0 border-r border-cyan-500/20 bg-[#050a26] flex flex-col h-full overflow-hidden z-10 ${
               selectedFriend ? "hidden md:flex" : "flex"
             }`}
           >
-            {/* Header & Search */}
-            <div className="p-4 border-b border-base-300 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-base-content flex items-center gap-2">
-                    <span>Chats</span>
-                    <span className="badge badge-primary badge-sm">
-                      {contacts.length}
-                    </span>
-                  </h2>
+            {/* Search & Refresh in the same line */}
+            <div className="p-3 sm:p-3.5 border-b border-cyan-500/20 shrink-0">
+              <div className="flex items-center gap-2">
+                {/* Search Conversations Input */}
+                <div className="relative flex-1 flex items-center bg-[#070e30]/90 rounded-xl border border-cyan-500/35 focus-within:border-cyan-400 focus-within:ring-1 focus-within:ring-cyan-400/30 focus-within:shadow-[0_0_15px_rgba(0,240,255,0.25)] transition-all">
+                  <HiSearch className="text-cyan-400 text-sm ml-3 shrink-0 opacity-80" />
+                  <input
+                    type="text"
+                    placeholder="Search conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-transparent py-2 px-2.5 text-white placeholder-cyan-200/40 text-xs focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="mr-2.5 text-cyan-300/60 hover:text-cyan-300 cursor-pointer text-xs"
+                    >
+                      <HiX />
+                    </button>
+                  )}
                 </div>
+
+                {/* Refresh Button */}
                 <button
                   onClick={loadChatData}
-                  title="Refresh contacts"
-                  className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-base-content"
+                  title="Refresh conversations"
+                  className="w-9 h-9 rounded-xl bg-[#091238] border border-cyan-500/35 text-cyan-300 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_12px_rgba(0,240,255,0.4)] flex items-center justify-center transition-all cursor-pointer shrink-0"
                 >
-                  🔄
+                  <HiRefresh className="text-base" />
                 </button>
-              </div>
-
-              {/* Search Bar */}
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search contacts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input input-sm input-bordered w-full pl-8 text-xs focus:outline-primary"
-                />
-                <span className="absolute left-2.5 top-2 text-xs text-base-content/40">
-                  🔍
-                </span>
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-2.5 top-1.5 text-xs text-base-content/40 hover:text-base-content"
-                  >
-                    ✕
-                  </button>
-                )}
               </div>
             </div>
 
-            {/* Contacts List */}
-            <div className="overflow-y-auto flex-1 divide-y divide-base-200/50">
+            {/* Contacts / Conversations Feed */}
+            <div className="overflow-y-auto flex-1 min-h-0 p-2 space-y-1">
               {loadingContacts ? (
-                <div className="flex flex-col items-center justify-center h-48 gap-2 text-base-content/40">
-                  <span className="loading loading-spinner loading-md text-primary" />
+                <div className="flex flex-col items-center justify-center h-48 gap-2 text-cyan-300/50">
+                  <span className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
                   <p className="text-xs">Loading conversations...</p>
                 </div>
               ) : filteredAndSortedContacts.length > 0 ? (
@@ -367,52 +379,68 @@ const Chat = () => {
                     <div
                       key={friendId}
                       onClick={() => handleSelectFriend(friend)}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-base-200/70 transition-all ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
                         isSelected
-                          ? "bg-primary/10 border-l-4 border-primary font-medium"
-                          : "border-l-4 border-transparent"
+                          ? "bg-[#0b163d] border border-cyan-400/60 shadow-[0_0_18px_rgba(0,240,255,0.2)]"
+                          : "bg-[#060b24]/40 hover:bg-[#0a1338]/70 border border-transparent hover:border-cyan-500/20"
                       }`}
                     >
-                      {/* Avatar with Online Indicator */}
+                      {/* Avatar with Cyber Dual-Ring Glow & Status Indicator */}
                       <div className="relative shrink-0">
-                        <div className="avatar avatar-placeholder">
-                          <div className="size-11 rounded-full bg-primary/20 text-primary font-bold text-sm flex items-center justify-center ring-1 ring-base-300">
-                            {(
-                              friend.fullName?.[0] ||
-                              friend.email?.[0] ||
-                              "U"
-                            ).toUpperCase()}
+                        <div className="p-[2px] rounded-full bg-gradient-to-tr from-cyan-400 to-fuchsia-500 shadow-[0_0_10px_rgba(0,240,255,0.4)]">
+                          <div className="size-10 rounded-full bg-[#050a24] text-cyan-300 font-bold text-sm flex items-center justify-center overflow-hidden">
+                            {friend.profilePic ? (
+                              <img
+                                src={friend.profilePic}
+                                alt={friend.fullName}
+                                className="size-full object-cover"
+                              />
+                            ) : (
+                              (
+                                friend.fullName?.[0] ||
+                                friend.email?.[0] ||
+                                "U"
+                              ).toUpperCase()
+                            )}
                           </div>
                         </div>
+
+                        {/* Online / Offline Dot */}
                         <span
-                          className={`absolute bottom-0 right-0 size-3.5 rounded-full border-2 border-base-100 ${
-                            isFriendOnline ? "bg-success" : "bg-base-content/20"
+                          className={`absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-[#050a26] ${
+                            isFriendOnline
+                              ? "bg-emerald-400 shadow-[0_0_8px_#34d399]"
+                              : "bg-slate-600"
                           }`}
                           title={isFriendOnline ? "Online" : "Offline"}
                         />
                       </div>
 
-                      {/* Info & Last message */}
-                      <div className="flex-1 min-w-0">
+                      {/* Friend Info & Last Message Snippet */}
+                      <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center justify-between gap-1 mb-0.5">
-                          <p className="font-semibold text-sm text-base-content truncate">
+                          <p className="font-bold text-sm text-white truncate tracking-wide">
                             {friend.fullName}
                           </p>
                           {meta?.lastMessageAt && (
-                            <span className="text-[11px] text-base-content/40 shrink-0">
+                            <span className="text-[11px] text-cyan-300/50 shrink-0 font-medium">
                               {formatTimeAgo(meta.lastMessageAt)}
                             </span>
                           )}
                         </div>
 
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs text-base-content/50 truncate">
+                          <p className="text-xs text-cyan-100/60 truncate">
                             {meta?.lastMessage || friend.email}
                           </p>
-                          {unread > 0 && (
-                            <span className="badge badge-primary badge-xs size-5 rounded-full font-bold shrink-0">
+                          {unread > 0 ? (
+                            <span className="px-1.5 py-0.5 rounded-full bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white font-bold text-[10px] shrink-0 shadow-[0_0_10px_rgba(236,72,153,0.6)]">
                               {unread > 9 ? "9+" : unread}
                             </span>
+                          ) : (
+                            isFriendOnline && (
+                              <span className="size-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] shrink-0" />
+                            )
                           )}
                         </div>
                       </div>
@@ -420,10 +448,12 @@ const Chat = () => {
                   );
                 })
               ) : (
-                <div className="flex flex-col items-center justify-center h-52 text-base-content/40 gap-2 px-4 text-center">
-                  <span className="text-4xl">👥</span>
-                  <p className="text-sm font-medium">No contacts found</p>
-                  <p className="text-xs text-base-content/30">
+                <div className="flex flex-col items-center justify-center h-52 text-cyan-300/40 gap-2 px-4 text-center">
+                  <span className="text-3xl">👥</span>
+                  <p className="text-sm font-semibold text-white/80">
+                    No contacts found
+                  </p>
+                  <p className="text-xs text-cyan-200/40">
                     {searchQuery
                       ? "Try a different search term"
                       : "Registered users will appear here"}
@@ -433,9 +463,11 @@ const Chat = () => {
             </div>
           </div>
 
-          {/* Chat Area */}
+          {/* ================================================================= */}
+          {/* RIGHT MAIN CHAT AREA                                              */}
+          {/* ================================================================= */}
           <div
-            className={`flex-1 flex flex-col bg-base-200 overflow-hidden ${
+            className={`flex-1 flex flex-col h-full bg-[#03071e] overflow-hidden min-h-0 z-10 ${
               !selectedFriend ? "hidden md:flex" : "flex"
             }`}
           >
@@ -455,24 +487,39 @@ const Chat = () => {
                 }}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-base-content/40 gap-4 p-8 text-center">
-                <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center text-4xl shadow-inner">
-                  💬
+              <div className="flex flex-col items-center justify-center h-full text-center p-8 gap-5">
+                <div className="relative">
+                  <div className="size-24 rounded-3xl bg-gradient-to-tr from-cyan-500/20 via-fuchsia-500/20 to-blue-500/10 border border-cyan-400/40 flex items-center justify-center text-5xl shadow-[0_0_40px_rgba(0,240,255,0.3)]">
+                    💬
+                  </div>
+                  <span className="absolute -bottom-2 -right-2 text-2xl animate-pulse">
+                    ✨
+                  </span>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-base-content">
-                    Welcome to Mingo Chat
+
+                <div className="max-w-md">
+                  <h3 className="text-3xl font-black tracking-tight text-white">
+                    Welcome to{" "}
+                    <span
+                      className="text-cyan-300"
+                      style={{
+                        textShadow: "0 0 15px rgba(0, 240, 255, 0.9)",
+                      }}
+                    >
+                      Mitra Chat
+                    </span>
                   </h3>
-                  <p className="text-sm text-base-content/60 mt-1 max-w-sm">
-                    Select any contact from the left sidebar to start messaging
-                    in real-time.
+                  <p className="text-sm text-cyan-100/70 mt-2 leading-relaxed">
+                    Select any contact from the left sidebar to start chatting
+                    with instant real-time messaging, glowing cyber aesthetics,
+                    and seamless media sharing.
                   </p>
                 </div>
               </div>
             )}
           </div>
         </div>
-      )}{" "}
+      )}
     </>
   );
 };
